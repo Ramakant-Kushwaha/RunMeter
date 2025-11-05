@@ -34,6 +34,7 @@ export class ScoreCardComponent implements OnInit {
   runRate: number = 0;
   inning = 1;
   isLive = true;
+  public timeLine: any[] = [];
 
   constructor(public router: Router, public appState: AppState) {}
 
@@ -103,6 +104,7 @@ export class ScoreCardComponent implements OnInit {
     } else {
       this.isLive = false;
       // Save result when match completes
+      this.timeLine = [];
       this.saveMatchResult();
     }
   }
@@ -130,6 +132,7 @@ export class ScoreCardComponent implements OnInit {
       this.startNewMatch();
       return;
     }
+    this.timeLine.unshift(run.toString());
 
     this.battingTeam.runs += run;
     // If chasing in second inning, check for win immediately
@@ -148,6 +151,40 @@ export class ScoreCardComponent implements OnInit {
     this.updateRunRate();
     this.updateRequiredRR();
   }
+  UndoLastBall() {
+    if (this.timeLine.length === 0) return;
+
+    const lastBall = this.timeLine.shift();
+
+    if (!lastBall) return;
+
+    if (/^1/.test(lastBall)) {
+      this.battingTeam.runs -= 1;
+      this.battingTeam.balls -= 1;
+    } else if (/^2/.test(lastBall)) {
+      this.battingTeam.runs -= 2;
+      this.battingTeam.balls -= 1;
+    } else if (/^3/.test(lastBall)) {
+      this.battingTeam.runs -= 3;
+      this.battingTeam.balls -= 1;
+    } else if (/^4/.test(lastBall)) {
+      this.battingTeam.runs -= 4;
+      this.battingTeam.balls -= 1;
+    } else if (/^6/.test(lastBall)) {
+      this.battingTeam.runs -= 6;
+      this.battingTeam.balls -= 1;
+    } else if (/w/i.test(lastBall)) {
+      this.battingTeam.wickets -= 1;
+      this.battingTeam.balls -= 1;
+    } else if (/wd/i.test(lastBall)) {
+      this.battingTeam.runs -= 1;
+    } else if (/no ball/i.test(lastBall)) {
+      this.battingTeam.runs -= 1;
+    } else if (/0 run|dot/i.test(lastBall)) {
+      this.battingTeam.runs -= 1;
+      this.battingTeam.balls -= 1;
+    }
+  }
 
   handleWicket() {
     this.battingTeam.wickets += 1;
@@ -156,6 +193,7 @@ export class ScoreCardComponent implements OnInit {
     } else {
       this.nextBall();
     }
+    this.timeLine.unshift('W');
     this.updateRunRate();
     this.updateRequiredRR();
   }
@@ -165,6 +203,20 @@ export class ScoreCardComponent implements OnInit {
     this.battingTeam.runs += 1;
     // Extras do not count as balls
     // If chasing, check for immediate win
+    switch (type) {
+      case 'wide': {
+        this.timeLine.unshift('WD');
+        break;
+      }
+      case 'noball': {
+        this.timeLine.unshift('NB');
+        break;
+      }
+      case 'bye': {
+        this.timeLine.unshift('B');
+        break;
+      }
+    }
     if (
       this.inning === 2 &&
       this.target &&
@@ -176,6 +228,7 @@ export class ScoreCardComponent implements OnInit {
       this.saveMatchResult();
       return;
     }
+
     this.updateRunRate();
     this.updateRequiredRR();
   }

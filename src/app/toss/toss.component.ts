@@ -42,12 +42,10 @@ export class TossComponent {
 
   public changeCoinImage() {
     let isHead = true;
-    const intervalTime = 200; // 200 ms — adjust as needed
+    const intervalTime = 200;
 
     const interval = setInterval(() => {
-      this.coinImage = isHead
-        ? '../../assets/head.png'
-        : '../../assets/tail.png';
+      this.coinImage = isHead ? 'assets/head.png' : 'assets/tail.png';
       isHead = !isHead;
     }, intervalTime);
 

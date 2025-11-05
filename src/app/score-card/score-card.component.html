@@ -137,13 +137,71 @@
         </button>
       </div>
       <div class="flex justify-end mb-2">
-        <button
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
-          (click)="startNextInning()"
-          *ngIf="inning === 1 && isLive"
+        <div class="flex gap-10 justify-between">
+          <button
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+            (click)="startNextInning()"
+            *ngIf="inning === 1 && isLive"
+          >
+            Start Next Inning
+          </button>
+          <button
+            class="px-4 py-2 bg-red-400 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+            (click)="UndoLastBall()"
+          >
+            Undo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Container -->
+    <div
+      class="p-6 bg-gradient-to-b from-slate-950 to-slate-900 text-gray-100 rounded-xl shadow-xl w-full max-w-3xl mx-auto"
+    >
+      <h2 class="text-2xl font-bold mb-4 text-center tracking-wide">
+        🏏 Ball-by-Ball Timeline
+      </h2>
+
+      <!-- Timeline Container -->
+      <div
+        class="flex overflow-x-auto space-x-3 p-4 bg-slate-800 rounded-lg shadow-inner scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900"
+      >
+        <div
+          *ngFor="let item of timeLine; let i = index"
+          class="min-w-[64px] flex flex-col items-center justify-center rounded-xl py-3 px-4 text-sm font-semibold transition-all duration-300 cursor-default hover:scale-110 hover:brightness-110"
+          [ngClass]="{
+            'bg-amber-400 text-gray-900 shadow-lg shadow-amber-500/40':
+              item.includes('1') || item.includes('2') || item.includes('3'),
+
+            'bg-green-500 text-white shadow-lg shadow-green-600/40':
+              item.includes('4'),
+
+            'bg-blue-500 text-white shadow-lg shadow-blue-600/40':
+              item.includes('6'),
+
+            'bg-red-600 text-white shadow-lg shadow-red-700/40': item
+              .toLowerCase()
+              .includes('w'),
+
+            'bg-purple-600 text-white shadow-lg shadow-purple-700/40': item
+              .toLowerCase()
+              .includes('wd'),
+
+            'bg-pink-500 text-white shadow-lg shadow-pink-600/40': item
+              .toLowerCase()
+              .includes('nb'),
+
+            'bg-gray-600 text-white shadow-lg shadow-gray-700/40':
+              item.toLowerCase().includes('0') ||
+              item.toLowerCase().includes('dot')
+          }"
         >
-          Start Next Inning
-        </button>
+          <span class="text-base font-bold">{{ item }}</span>
+          <div *ngIf="(i + 1) % 6 === 0" class="w-px bg-slate-500 mx-2"></div>
+        </div>
+
+        <!-- Optional: Over Divider -->
       </div>
     </div>
   </div>
