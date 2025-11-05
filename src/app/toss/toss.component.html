@@ -1,0 +1,151 @@
+<div
+  class="bg-gradient-to-b h-full w-full from-slate-950 to-slate-900 text-gray-100 px-4 coin-container fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
+>
+  <div
+    class="radio-container bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-2xl p-8 shadow-2xl transform transition-all duration-300 scale-100 w-96"
+  >
+    <!-- Title -->
+    <h2
+      *ngIf="result == null"
+      class="text-3xl font-extrabold mb-8 text-center text-gray-800"
+    >
+      🪙 Make Your Call
+    </h2>
+
+    <!-- Team Selection -->
+    <div class="mb-8" *ngIf="result == null">
+      <h3 class="text-lg font-semibold mb-4 text-gray-700 text-center">
+        Select Team
+      </h3>
+      <div class="flex justify-center space-x-6">
+        <!-- Team A -->
+        <label
+          class="flex items-center justify-between p-4 rounded-lg border-2 border-transparent hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+        >
+          <div class="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="team"
+              [value]="'A'"
+              [(ngModel)]="selectedTeam"
+              class="form-radio text-blue-600 h-5 w-5 focus:ring-2 focus:ring-blue-500"
+            />
+            <span class="text-gray-800 font-medium">{{
+              matchData?.teamA
+            }}</span>
+          </div>
+        </label>
+
+        <!-- Team B -->
+        <label
+          class="flex items-center justify-between p-4 rounded-lg border-2 border-transparent hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+        >
+          <div class="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="team"
+              [value]="'B'"
+              [(ngModel)]="selectedTeam"
+              class="form-radio text-blue-600 h-5 w-5 focus:ring-2 focus:ring-blue-500"
+            />
+            <span class="text-gray-800 font-medium">{{
+              matchData?.teamB
+            }}</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Coin Call (Head/Tail) -->
+    <div class="mb-8">
+      <h3 class="text-lg font-semibold mb-4 text-gray-700 text-center">
+        Choose Head or Tail
+      </h3>
+      <div class="flex justify-center space-x-6 mb-6">
+        <!-- Head -->
+        <label
+          class="flex flex-col items-center p-4 rounded-xl border-2 border-transparent hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 cursor-pointer w-24"
+        >
+          <img
+            src="assets/head.png"
+            alt="Head"
+            class="w-10 h-10 mb-2 object-contain"
+          />
+          <input
+            type="radio"
+            name="call"
+            value="Head"
+            [(ngModel)]="selectedCall"
+            class="form-radio text-yellow-600 h-5 w-5 focus:ring-2 focus:ring-yellow-500"
+          />
+          <span class="text-gray-800 font-medium mt-1">Head</span>
+        </label>
+
+        <!-- Tail -->
+        <label
+          class="flex flex-col items-center p-4 rounded-xl border-2 border-transparent hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 cursor-pointer w-24"
+        >
+          <img
+            src="assets/tail.png"
+            alt="Tail"
+            class="w-10 h-10 mb-2 object-contain"
+          />
+          <input
+            type="radio"
+            name="call"
+            value="Tail"
+            [(ngModel)]="selectedCall"
+            class="form-radio text-yellow-600 h-5 w-5 focus:ring-2 focus:ring-yellow-500"
+          />
+          <span class="text-gray-800 font-medium mt-1">Tail</span>
+        </label>
+      </div>
+
+      <!-- Coin Flip Display -->
+      <div
+        class="coin relative flex justify-center cursor-pointer"
+        [ngClass]="{ flipping: isFlipping }"
+      >
+        <img
+          [src]="coinImage"
+          alt="Coin"
+          (click)="flipCoin()"
+          class="w-32 h-32 rounded-full shadow-lg transition-transform hover:scale-105"
+        />
+      </div>
+    </div>
+
+    <!-- Bat / Ball Selection -->
+    <div class="mt-10 text-center" *ngIf="result != null">
+      <h3 class="text-lg font-semibold mb-4 text-gray-700">
+        Toss won by
+        {{
+          selectedCall == result
+            ? selectedTeam == "A"
+              ? matchData.teamA
+              : matchData.teamB
+            : selectedTeam == "A"
+            ? matchData.teamB
+            : matchData.teamA
+        }}
+      </h3>
+      <h3 class="text-lg font-semibold mb-4 text-gray-700">
+        Choose Bat or Ball
+      </h3>
+      <div class="flex justify-center space-x-6">
+        <button
+          (click)="onChoose('Bat')"
+          class="w-28 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold rounded-lg shadow-md hover:from-orange-600 hover:to-yellow-600 transition-all duration-300"
+        >
+          🏏 Bat
+        </button>
+        <button
+          (click)="onChoose('Ball')"
+          class="w-28 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-300"
+        >
+          🎯 Ball
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+{
+  "tailwindCSS.projects": [
+    {
+      "folder": ".",
+      "config": "tailwind.config.js"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<div
+  class="border border-white/10 rounded-lg p-4 bg-white/5"
+  *ngFor="let match of recentMatches"
+>
+  <div class="flex items-start justify-between">
+    <div>
+      <h3 class="font-medium text-gray-100">
+        {{ match.teamA.name }} vs {{ match.teamB.name }}
+      </h3>
+      <p class="text-sm text-gray-400 mt-1">
+        A:
+        <span class="font-medium text-gray-200"
+          >{{ match.teamA.runs }}/{{ match.teamA.wickets }} ({{
+            match.teamA.oversPlayed
+          }})</span
+        >
+      </p>
+      <p class="text-sm text-gray-400">
+        B:
+        <span class="font-medium text-gray-200"
+          >{{ match.teamB.runs }}/{{ match.teamB.wickets }} ({{
+            match.teamB.oversPlayed
+          }})</span
+        >
+      </p>
+      <p class="text-sm text-yellow-400 mt-2 font-medium">
+        {{ match.teamWon }}
+      </p>
+    </div>
+    <div class="ml-4">
+      <span
+        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40"
+        >COMPLETED</span
+      >
+    </div>
+  </div>
+</div>
