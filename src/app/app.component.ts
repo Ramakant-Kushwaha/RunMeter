@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,5 +11,15 @@ import { Router } from '@angular/router';
 export class AppComponent {
   public title = 'RunMeter';
 
-  constructor(private fb: FormBuilder, public router: Router) {}
+  constructor(
+    private fb: FormBuilder,
+    public router: Router,
+    private http: HttpClient
+  ) {}
+
+  ngOnInit(): void {
+    this.http
+      .get('http://localhost:3000/')
+      .subscribe((res: any) => alert(res['msg']));
+  }
 }
