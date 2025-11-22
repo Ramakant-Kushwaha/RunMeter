@@ -9,5 +9,5 @@ RUN npx ng build --configuration production
 # Stage 2: serve
 FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app/dist/ /usr/share/nginx/html/
+COPY --from=builder /app/dist/run-meter/browser /usr/share/nginx/html/
 EXPOSE 80
