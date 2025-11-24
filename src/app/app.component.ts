@@ -19,7 +19,9 @@ export class AppComponent {
 
   ngOnInit(): void {
     this.http
-      .get('http://localhost:3000/')
-      .subscribe((res: any) => alert(res['msg']));
+      .get<{ msg: string }>('http://192.168.1.76:3000/')
+      .subscribe((res: { msg: string }) => {
+        alert(res.msg);
+      });
   }
 }
