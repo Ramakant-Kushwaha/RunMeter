@@ -1,0 +1,23 @@
+pipeline{
+    agent  any
+    stages{
+
+        stage("checkout from git"){
+            steps{
+                git branch : 'master', url :  'https://github.com/Ramakant-Kushwaha/RunMeter.git'
+            }
+        }
+
+        stage("Build image file"){
+            steps{
+                sh "docker build -t test:ui ."
+            }
+        }
+        stage("Run image"){
+            steps{
+                sh "docker run -d -p 4200:80 --network testnet --name ui test:ui"
+            }
+        }
+    }
+   
+}
