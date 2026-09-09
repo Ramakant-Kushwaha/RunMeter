@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IRecentMatches } from '../models';
+import { ILiveMatchState, IRecentMatches } from '../models';
 import { AppState } from '../services/app-state.service';
+import { LiveScoreService } from '../services/live-score.service';
 
 @Component({
   selector: 'app-score-card',
@@ -9,47 +10,38 @@ import { AppState } from '../services/app-state.service';
   styleUrls: ['./score-card.component.scss'],
 })
 export class ScoreCardComponent implements OnInit {
-  teamA = {
-    name: 'a',
-    runs: 0,
-    wickets: 0,
-    overs: 0,
-    balls: 0,
-    extras: 0,
-  };
-
-  teamB = {
-    name: 'b',
-    runs: 0,
-    wickets: 0,
-    overs: 0,
-    balls: 0,
-    extras: 0,
-  };
+  teamA = { name: 'a', runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 };
+  teamB = { name: 'b', runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 };
 
   currentBatting: string | null = 'A';
   totalOvers = 5;
   target: number | null = null;
   requiredRR: number | null = null;
-  runRate: number = 0;
+  runRate = 0;
   inning = 1;
   isLive = true;
   public timeLine: any[] = [];
 
-  constructor(public router: Router, public appState: AppState) {}
+  /** URL spectators open to watch the live score */
+  get liveUrl(): string {
+    return window.location.href.replace(/\/scorecard.*/, '/live');
+  }
+
+  constructor(
+    public router: Router,
+    public appState: AppState,
+    private liveScore: LiveScoreService
+  ) {}
 
   ngOnInit(): void {
     const matchData = this.appState.getMatchData();
     if (!matchData) {
-      // No match data — navigate home
       this.router.navigateByUrl('/');
       return;
     }
-    // Initialize teams and overs
     this.teamA.name = matchData.teamA || 'Team A';
     this.teamB.name = matchData.teamB || 'Team B';
     this.totalOvers = matchData.overs || this.totalOvers;
-    // Reset any running state
     this.resetTeam(this.teamA);
     this.resetTeam(this.teamB);
     this.currentBatting = this.appState.currentBatting;
@@ -58,132 +50,49 @@ export class ScoreCardComponent implements OnInit {
     this.target = null;
     this.requiredRR = null;
     this.runRate = 0;
+    // Broadcast initial state so /live shows the match straight away
+    this.broadcast();
   }
 
-  get targetDisplay() {
-    return this.target ? this.target : '-';
-  }
-  get requiredRRDisplay() {
-    return this.requiredRR !== null ? this.requiredRR : '-';
-  }
-  get runRateDisplay() {
-    return this.runRate.toFixed(2);
-  }
+  // ─── Getters ──────────────────────────────────────────────────────────────
 
-  get battingTeam() {
-    return this.currentBatting === 'A' ? this.teamA : this.teamB;
-  }
-  get bowlingTeam() {
-    return this.currentBatting === 'A' ? this.teamB : this.teamA;
-  }
-
-  get scoreDisplay() {
-    return `${this.battingTeam.runs}/${this.battingTeam.wickets}`;
-  }
-  get overDisplay() {
-    return `${this.battingTeam.overs}.${this.battingTeam.balls}`;
-  }
-
-  // Utility: Reset team for new inning
-  resetTeam(team: any) {
-    team.runs = 0;
-    team.wickets = 0;
-    team.overs = 0;
-    team.balls = 0;
-    team.extras = 0;
-  }
-
-  // Correct inning logic and connect everything
-  endInnings() {
-    if (this.inning === 1) {
-      this.target = this.battingTeam.runs + 1;
-      this.currentBatting = this.currentBatting === 'A' ? 'B' : 'A';
-      this.inning = 2;
-      this.resetTeam(this.battingTeam); // Reset for next inning
-      this.updateRequiredRR();
-    } else {
-      this.isLive = false;
-      // Save result when match completes
-      this.timeLine = [];
-      this.saveMatchResult();
-    }
-  }
-
-  // Show which team is batting
-  get currentBattingName() {
-    return this.battingTeam.name;
-  }
-
-  // Show which team is bowling
-  get currentBowlingName() {
-    return this.bowlingTeam.name;
-  }
-
-  // Show inning status
+  get targetDisplay()     { return this.target ? this.target : '-'; }
+  get requiredRRDisplay() { return this.requiredRR !== null ? this.requiredRR : '-'; }
+  get runRateDisplay()    { return this.runRate.toFixed(2); }
+  get battingTeam()       { return this.currentBatting === 'A' ? this.teamA : this.teamB; }
+  get bowlingTeam()       { return this.currentBatting === 'A' ? this.teamB : this.teamA; }
+  get scoreDisplay()      { return `${this.battingTeam.runs}/${this.battingTeam.wickets}`; }
+  get overDisplay()       { return `${this.battingTeam.overs}.${this.battingTeam.balls}`; }
+  get currentBattingName(){ return this.battingTeam.name; }
+  get currentBowlingName(){ return this.bowlingTeam.name; }
   get inningStatus() {
     return this.isLive
       ? `Innings ${this.inning} · ${this.totalOvers} overs per side`
       : 'Match Ended';
   }
 
+  // ─── Score actions ────────────────────────────────────────────────────────
+
   handleRun(run: number) {
     if (!this.isLive) {
-      alert('This match is ended, start a new match');
+      alert('This match has ended. Start a new match.');
       this.startNewMatch();
       return;
     }
     this.timeLine.unshift(run.toString());
-
     this.battingTeam.runs += run;
-    // If chasing in second inning, check for win immediately
-    if (
-      this.inning === 2 &&
-      this.target &&
-      this.battingTeam.runs >= this.target
-    ) {
+    if (this.inning === 2 && this.target && this.battingTeam.runs >= this.target) {
       this.isLive = false;
       this.updateRunRate();
       this.updateRequiredRR();
       this.saveMatchResult();
+      this.broadcastFinal();
       return;
     }
     this.nextBall();
     this.updateRunRate();
     this.updateRequiredRR();
-  }
-  UndoLastBall() {
-    if (this.timeLine.length === 0) return;
-
-    const lastBall = this.timeLine.shift();
-
-    if (!lastBall) return;
-
-    if (/^1/.test(lastBall)) {
-      this.battingTeam.runs -= 1;
-      this.battingTeam.balls -= 1;
-    } else if (/^2/.test(lastBall)) {
-      this.battingTeam.runs -= 2;
-      this.battingTeam.balls -= 1;
-    } else if (/^3/.test(lastBall)) {
-      this.battingTeam.runs -= 3;
-      this.battingTeam.balls -= 1;
-    } else if (/^4/.test(lastBall)) {
-      this.battingTeam.runs -= 4;
-      this.battingTeam.balls -= 1;
-    } else if (/^6/.test(lastBall)) {
-      this.battingTeam.runs -= 6;
-      this.battingTeam.balls -= 1;
-    } else if (/w/i.test(lastBall)) {
-      this.battingTeam.wickets -= 1;
-      this.battingTeam.balls -= 1;
-    } else if (/wd/i.test(lastBall)) {
-      this.battingTeam.runs -= 1;
-    } else if (/no ball/i.test(lastBall)) {
-      this.battingTeam.runs -= 1;
-    } else if (/0 run|dot/i.test(lastBall)) {
-      this.battingTeam.runs -= 1;
-      this.battingTeam.balls -= 1;
-    }
+    this.broadcast();
   }
 
   handleWicket() {
@@ -196,41 +105,72 @@ export class ScoreCardComponent implements OnInit {
     this.timeLine.unshift('W');
     this.updateRunRate();
     this.updateRequiredRR();
+    this.broadcast();
   }
 
   handleExtra(type: 'wide' | 'noball' | 'bye') {
     this.battingTeam.extras += 1;
     this.battingTeam.runs += 1;
-    // Extras do not count as balls
-    // If chasing, check for immediate win
     switch (type) {
-      case 'wide': {
-        this.timeLine.unshift('WD');
-        break;
-      }
-      case 'noball': {
-        this.timeLine.unshift('NB');
-        break;
-      }
-      case 'bye': {
-        this.timeLine.unshift('B');
-        break;
-      }
+      case 'wide':   this.timeLine.unshift('WD'); break;
+      case 'noball': this.timeLine.unshift('NB'); break;
+      case 'bye':    this.timeLine.unshift('B');  break;
     }
-    if (
-      this.inning === 2 &&
-      this.target &&
-      this.battingTeam.runs >= this.target
-    ) {
+    if (this.inning === 2 && this.target && this.battingTeam.runs >= this.target) {
       this.isLive = false;
       this.updateRunRate();
       this.updateRequiredRR();
       this.saveMatchResult();
+      this.broadcastFinal();
       return;
     }
-
     this.updateRunRate();
     this.updateRequiredRR();
+    this.broadcast();
+  }
+
+  UndoLastBall() {
+    if (this.timeLine.length === 0) return;
+    const lastBall = this.timeLine.shift();
+    if (!lastBall) return;
+    if (/^1/.test(lastBall)) { this.battingTeam.runs -= 1; this.battingTeam.balls -= 1; }
+    else if (/^2/.test(lastBall)) { this.battingTeam.runs -= 2; this.battingTeam.balls -= 1; }
+    else if (/^3/.test(lastBall)) { this.battingTeam.runs -= 3; this.battingTeam.balls -= 1; }
+    else if (/^4/.test(lastBall)) { this.battingTeam.runs -= 4; this.battingTeam.balls -= 1; }
+    else if (/^6/.test(lastBall)) { this.battingTeam.runs -= 6; this.battingTeam.balls -= 1; }
+    else if (/w/i.test(lastBall) && !/wd/i.test(lastBall)) { this.battingTeam.wickets -= 1; this.battingTeam.balls -= 1; }
+    else if (/wd/i.test(lastBall)) { this.battingTeam.runs -= 1; this.battingTeam.extras -= 1; }
+    else if (/nb/i.test(lastBall)) { this.battingTeam.runs -= 1; this.battingTeam.extras -= 1; }
+    else if (/b/i.test(lastBall))  { this.battingTeam.runs -= 1; this.battingTeam.extras -= 1; }
+    else if (/0/.test(lastBall))   { this.battingTeam.balls -= 1; }
+    this.updateRunRate();
+    this.updateRequiredRR();
+    this.broadcast();
+  }
+
+  startNextInning() {
+    if (this.inning === 1) this.endInnings();
+  }
+
+  // ─── Internal helpers ─────────────────────────────────────────────────────
+
+  resetTeam(team: any) {
+    team.runs = 0; team.wickets = 0; team.overs = 0; team.balls = 0; team.extras = 0;
+  }
+
+  endInnings() {
+    if (this.inning === 1) {
+      this.target = this.battingTeam.runs + 1;
+      this.currentBatting = this.currentBatting === 'A' ? 'B' : 'A';
+      this.inning = 2;
+      this.resetTeam(this.battingTeam);
+      this.updateRequiredRR();
+    } else {
+      this.isLive = false;
+      this.timeLine = [];
+      this.saveMatchResult();
+      this.broadcastFinal();
+    }
   }
 
   nextBall() {
@@ -239,95 +179,85 @@ export class ScoreCardComponent implements OnInit {
       this.battingTeam.overs += 1;
       this.battingTeam.balls = 0;
     }
-    // End of innings by overs
-    if (this.battingTeam.overs === this.totalOvers) {
-      this.endInnings();
-    }
-  }
-
-  startNextInning() {
-    if (this.inning === 1) {
-      this.endInnings();
-    }
+    if (this.battingTeam.overs === this.totalOvers) this.endInnings();
   }
 
   updateRunRate() {
     const balls = this.battingTeam.overs * 6 + this.battingTeam.balls;
-    this.runRate =
-      balls > 0 ? +(this.battingTeam.runs / (balls / 6)).toFixed(2) : 0;
+    this.runRate = balls > 0 ? +(this.battingTeam.runs / (balls / 6)).toFixed(2) : 0;
   }
 
   updateRequiredRR() {
     if (this.inning === 2 && this.target) {
-      const balls =
-        this.totalOvers * 6 -
-        (this.battingTeam.overs * 6 + this.battingTeam.balls);
-      this.requiredRR =
-        balls > 0
-          ? +((this.target - this.battingTeam.runs) / (balls / 6)).toFixed(2)
-          : 0;
+      const balls = this.totalOvers * 6 - (this.battingTeam.overs * 6 + this.battingTeam.balls);
+      this.requiredRR = balls > 0
+        ? +((this.target - this.battingTeam.runs) / (balls / 6)).toFixed(2) : 0;
     } else {
       this.requiredRR = null;
     }
   }
 
-  backToHome() {
-    this.router.navigateByUrl('/');
-  }
-
   saveMatchResult() {
     let winner = '';
-    if (this.teamA.runs > this.teamB.runs) {
-      winner = `${this.teamA.name} won by ${
-        this.teamA.runs - this.teamB.runs
-      } runs`;
-    } else if (this.teamB.runs > this.teamA.runs) {
+    if (this.teamA.runs > this.teamB.runs)
+      winner = `${this.teamA.name} won by ${this.teamA.runs - this.teamB.runs} runs`;
+    else if (this.teamB.runs > this.teamA.runs)
       winner = `${this.teamB.name} won by ${10 - this.teamB.wickets} wickets`;
-    } else {
+    else
       winner = 'Match Drawn';
-    }
+
     const match: IRecentMatches = {
-      teamA: {
-        name: this.teamA.name,
-        runs: this.teamA.runs.toString(),
-        wickets: this.teamA.wickets.toString(),
-        oversPlayed: `${this.teamA.overs}.${this.teamA.balls}`,
-      },
-      teamB: {
-        name: this.teamB.name,
-        runs: this.teamB.runs.toString(),
-        wickets: this.teamB.wickets.toString(),
-        oversPlayed: `${this.teamB.overs}.${this.teamB.balls}`,
-      },
+      teamA: { name: this.teamA.name, runs: this.teamA.runs.toString(), wickets: this.teamA.wickets.toString(), oversPlayed: `${this.teamA.overs}.${this.teamA.balls}` },
+      teamB: { name: this.teamB.name, runs: this.teamB.runs.toString(), wickets: this.teamB.wickets.toString(), oversPlayed: `${this.teamB.overs}.${this.teamB.balls}` },
       teamWon: winner,
     };
+    console.log('Match result saved:', match);
   }
 
   public startNewMatch() {
     const matchData: any = this.appState.getMatchData();
     this.currentBatting = this.teamA.runs > this.teamB.runs ? 'A' : 'B';
+    this.teamA = { name: matchData.teamA, runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 };
+    this.teamB = { name: matchData.teamB, runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 };
+    this.inning = 1; this.isLive = true; this.target = null;
+    this.requiredRR = null; this.runRate = 0; this.totalOvers = matchData.overs;
+    this.timeLine = [];
+    this.broadcast();
+  }
 
-    this.teamA = {
-      name: matchData.teamA,
-      runs: 0,
-      wickets: 0,
-      overs: 0,
-      balls: 0,
-      extras: 0,
+  backToHome() { this.router.navigateByUrl('/'); }
+
+  copyLiveUrl() {
+    navigator.clipboard.writeText(this.liveUrl).then(() => alert('Live link copied!'));
+  }
+
+  // ─── LiveScoreService bridge ───────────────────────────────────────────────
+
+  /** Builds the shared ILiveMatchState from current component state. */
+  private buildState(status = 'live'): ILiveMatchState {
+    return {
+      matchId: 'live-match',
+      status,
+      inning: this.inning,
+      totalOvers: this.totalOvers,
+      teamA: { ...this.teamA },
+      teamB: { ...this.teamB },
+      currentBatting: this.currentBatting ?? 'A',
+      target: this.target,
+      runRate: this.runRate,
+      requiredRR: this.requiredRR,
+      timeLine: [...this.timeLine],
+      lastUpdated: new Date().toISOString(),
     };
-    this.teamB = {
-      name: matchData.teamB,
-      runs: 0,
-      wickets: 0,
-      overs: 0,
-      balls: 0,
-      extras: 0,
-    };
-    this.inning = 1;
-    this.isLive = true;
-    this.target = null;
-    this.requiredRR = null;
-    this.runRate = 0;
-    this.totalOvers = matchData.overs;
+  }
+
+  /** Push live state after every ball. */
+  private broadcast() {
+    this.liveScore.updateState(this.buildState('live'));
+  }
+
+  /** Push final state when match ends, then reset after 5 s. */
+  private broadcastFinal() {
+    this.liveScore.finaliseMatch(this.buildState('ended'));
   }
 }
