@@ -3,14 +3,15 @@
 >
   <div class="w-full max-w-2xl space-y-6">
 
-    <!-- Loading -->
+    <!-- Loading spinner -->
     <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-32 space-y-4">
       <div class="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
       <p class="text-gray-400">Loading live scores…</p>
     </div>
 
-    <!-- No active match -->
-    <div *ngIf="!isLoading && (!matchState || matchState.status === 'idle')"
+    <!-- No active match (null or idle) -->
+    <div
+      *ngIf="!isLoading && (!matchState || matchState.status === 'idle')"
       class="flex flex-col items-center justify-center py-32 space-y-4 text-center"
     >
       <span class="text-5xl">🏟️</span>
@@ -21,22 +22,25 @@
     <!-- Live scoreboard -->
     <ng-container *ngIf="!isLoading && matchState && matchState.status !== 'idle'">
 
-      <!-- Header -->
+      <!-- Header row -->
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
           <span class="text-xl font-bold">🏏 RunMeter</span>
-          <span *ngIf="matchState.status === 'live'"
+          <span
+            *ngIf="matchState.status === 'live'"
             class="bg-pink-600/80 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse"
           >● LIVE</span>
-          <span *ngIf="matchState.status === 'ended'"
+          <span
+            *ngIf="matchState.status === 'ended'"
             class="bg-gray-600/80 text-white px-3 py-1 rounded-full text-xs font-bold"
           >ENDED</span>
         </div>
-        <span class="text-xs text-gray-500">Auto-updates instantly</span>
+        <span class="text-xs text-gray-500">Updates instantly</span>
       </div>
 
-      <!-- Match ended result banner -->
-      <div *ngIf="matchState.status === 'ended'"
+      <!-- Match ended banner -->
+      <div
+        *ngIf="matchState.status === 'ended'"
         class="bg-yellow-500/10 border border-yellow-400/30 rounded-2xl p-6 text-center"
       >
         <p class="text-3xl mb-1">🏆</p>
@@ -52,13 +56,16 @@
       <!-- Team cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <div class="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-white/20 p-6"
+        <div
+          class="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-white/20 p-6"
           [class.ring-yellow-400]="matchState.currentBatting === 'A' && matchState.status === 'live'"
         >
           <div class="font-semibold text-yellow-400">
             {{ matchState.teamA.name }}
-            <span *ngIf="matchState.currentBatting === 'A' && matchState.status === 'live'"
-              class="text-xs ml-1 text-white/60">🏏 Batting</span>
+            <span
+              *ngIf="matchState.currentBatting === 'A' && matchState.status === 'live'"
+              class="text-xs ml-1 text-white/60"
+            >🏏 Batting</span>
           </div>
           <div class="text-4xl font-bold text-white mt-2">
             {{ matchState.teamA.runs }}/{{ matchState.teamA.wickets }}
@@ -69,13 +76,16 @@
           </div>
         </div>
 
-        <div class="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-white/20 p-6"
+        <div
+          class="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-white/20 p-6"
           [class.ring-yellow-400]="matchState.currentBatting === 'B' && matchState.status === 'live'"
         >
           <div class="font-semibold text-yellow-400">
             {{ matchState.teamB.name }}
-            <span *ngIf="matchState.currentBatting === 'B' && matchState.status === 'live'"
-              class="text-xs ml-1 text-white/60">🏏 Batting</span>
+            <span
+              *ngIf="matchState.currentBatting === 'B' && matchState.status === 'live'"
+              class="text-xs ml-1 text-white/60"
+            >🏏 Batting</span>
           </div>
           <div class="text-4xl font-bold text-white mt-2">
             {{ matchState.teamB.runs }}/{{ matchState.teamB.wickets }}
@@ -91,7 +101,7 @@
       <div class="grid grid-cols-3 gap-2 bg-white/10 backdrop-blur-xl rounded-2xl ring-1 ring-white/20 p-4">
         <div class="flex flex-col items-center">
           <span class="text-xs text-gray-400">Run Rate</span>
-          <span class="font-bold text-lg text-yellow-400">{{ matchState.runRate.toFixed(2) }}</span>
+          <span class="font-bold text-lg text-yellow-400">{{ (+matchState.runRate).toFixed(2) }}</span>
         </div>
         <div class="flex flex-col items-center">
           <span class="text-xs text-gray-400">Target</span>
@@ -100,7 +110,7 @@
         <div class="flex flex-col items-center">
           <span class="text-xs text-gray-400">Req. RR</span>
           <span class="font-bold text-lg text-yellow-400">
-            {{ matchState.requiredRR !== null ? matchState.requiredRR : '—' }}
+            {{ matchState.requiredRR !== null && matchState.requiredRR !== undefined ? (+matchState.requiredRR).toFixed(2) : '—' }}
           </span>
         </div>
       </div>
@@ -109,22 +119,24 @@
       <div class="p-6 bg-slate-800/60 rounded-xl shadow-xl">
         <h2 class="text-xl font-bold mb-4 text-center tracking-wide">🏏 Ball-by-Ball Timeline</h2>
         <div class="flex overflow-x-auto space-x-3 p-2 rounded-lg">
-          <div *ngFor="let item of matchState.timeLine"
-            class="min-w-[56px] flex items-center justify-center rounded-xl py-3 px-3 text-sm font-semibold transition-all"
+          <div
+            *ngFor="let item of (matchState.timeLine || [])"
+            class="min-w-[56px] flex items-center justify-center rounded-xl py-3 px-3 text-sm font-semibold"
             [ngClass]="{
               'bg-amber-400 text-gray-900': item === '1' || item === '2' || item === '3',
-              'bg-green-500 text-white': item === '4',
-              'bg-blue-500 text-white': item === '6',
-              'bg-red-600 text-white': item === 'W',
+              'bg-green-500 text-white':  item === '4',
+              'bg-blue-500 text-white':   item === '6',
+              'bg-red-600 text-white':    item === 'W',
               'bg-purple-600 text-white': item === 'WD',
-              'bg-pink-500 text-white': item === 'NB',
-              'bg-teal-600 text-white': item === 'B',
-              'bg-gray-600 text-white': item === '0'
+              'bg-pink-500 text-white':   item === 'NB',
+              'bg-teal-600 text-white':   item === 'B',
+              'bg-gray-600 text-white':   item === '0'
             }"
           >{{ item }}</div>
-          <span *ngIf="matchState.timeLine.length === 0" class="text-gray-500 text-sm self-center">
-            No balls bowled yet
-          </span>
+          <span
+            *ngIf="!matchState.timeLine || matchState.timeLine.length === 0"
+            class="text-gray-500 text-sm self-center"
+          >No balls bowled yet</span>
         </div>
       </div>
 
